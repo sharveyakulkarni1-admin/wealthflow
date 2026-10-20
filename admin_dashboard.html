@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Platform Analytics | WealthFlow Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    body { background:radial-gradient(circle at 10% 0%,rgba(79,70,229,.12),transparent 34%),#020617; }
+    .panel { border:1px solid rgba(148,163,184,.13); background:rgba(15,23,42,.78); }
+    .filter-button[aria-pressed="true"] { background:#4f46e5;color:white; }
+    .filter-button:focus-visible,input:focus-visible,button:focus-visible,a:focus-visible { outline:2px solid #a5b4fc;outline-offset:2px; }
+  </style>
+</head>
+<body class="min-h-screen text-slate-100">
+  <header class="border-b border-slate-800 bg-slate-950/80">
+    <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <a href="/admin/dashboard" class="flex items-center gap-3" aria-label="WealthFlow admin dashboard">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-indigo-500/20 text-lg font-bold text-indigo-200">W</span>
+        <span><strong class="block">WealthFlow Admin</strong><span class="text-xs text-slate-500">Platform overview</span></span>
+      </a>
+      <nav class="flex items-center gap-3 text-sm" aria-label="Admin navigation">
+        <a href="/admin/dashboard" aria-current="page" class="rounded-lg bg-indigo-500/15 px-3 py-2 text-indigo-200">Analytics</a>
+        <a href="/admin/users" class="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800">Registered users</a>
+        <form action="/admin/logout" method="post">
+          <button type="submit" class="rounded-lg border border-slate-700 px-3 py-2 text-slate-300 hover:bg-slate-800">Log out</button>
+        </form>
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+    <section class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[.18em] text-indigo-300">Platform analytics</p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight">Your platform at a glance</h1>
+        <p class="mt-2 max-w-2xl text-sm text-slate-400">Aggregated counts from WealthFlow account and transaction records. No individual financial details are shown here.</p>
+      </div>
+      <a href="/admin/users" class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold hover:bg-indigo-500">Manage registered users</a>
+    </section>
+
+    <section class="panel rounded-2xl p-4 sm:p-5" aria-labelledby="dateFilterTitle">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 id="dateFilterTitle" class="font-semibold">Activity date range</h2>
+          <p class="mt-1 text-xs text-slate-500">Registration and transaction activity use the selected dates.</p>
+        </div>
+        <div class="flex flex-wrap gap-2" aria-label="Quick date range">
+          <button type="button" class="filter-button rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800" data-range-days="7" aria-pressed="false">7 days</button>
+          <button type="button" class="filter-button rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800" data-range-days="30" aria-pressed="true">30 days</button>
+          <button type="button" class="filter-button rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800" data-range-days="90" aria-pressed="false">90 days</button>
+          <button type="button" class="filter-button rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800" data-range-days="365" aria-pressed="false">1 year</button>
+        </div>
+      </div>
+      <form id="dateRangeForm" class="mt-4 flex flex-wrap items-end gap-3">
+        <label class="text-xs text-slate-400">From
+          <input id="startDate" type="date" required class="mt-1 block rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100">
+        </label>
+        <label class="text-xs text-slate-400">To
+          <input id="endDate" type="date" required class="mt-1 block rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100">
+        </label>
+        <button id="applyDateRange" type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold hover:bg-indigo-500">Apply dates</button>
+        <p id="analyticsStatus" class="min-h-5 text-sm text-slate-400" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="analyticsContent" aria-label="Platform metrics" aria-busy="true">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <article class="panel rounded-2xl p-5"><p class="text-sm text-slate-400">Registered users</p><p id="registeredUsers" class="mt-3 text-3xl font-bold text-white">—</p><p class="mt-2 text-xs text-slate-500">All accounts to date</p></article>
+        <article class="panel rounded-2xl p-5"><p class="text-sm text-slate-400">New registrations</p><p id="newUsers" class="mt-3 text-3xl font-bold text-indigo-300">—</p><p class="mt-2 text-xs text-slate-500">Selected date range</p></article>
+        <article class="panel rounded-2xl p-5"><p class="text-sm text-slate-400">Active users</p><p id="activeUsers" class="mt-3 text-3xl font-bold text-sky-300">—</p><p class="mt-2 text-xs text-slate-500">Users with a transaction in range</p></article>
+        <article class="panel rounded-2xl p-5"><p class="text-sm text-slate-400">Total transactions</p><p id="totalTransactions" class="mt-3 text-3xl font-bold text-emerald-300">—</p><p class="mt-2 text-xs text-slate-500">All recorded transactions</p></article>
+        <article class="panel rounded-2xl p-5"><p class="text-sm text-slate-400">Period transactions</p><p id="periodTransactions" class="mt-3 text-3xl font-bold text-amber-300">—</p><p class="mt-2 text-xs text-slate-500">Selected date range</p></article>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">WealthFlow does not currently record sign-in events; “active users” is measured by transaction activity, not session activity.</p>
+    </section>
+
+    <section class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2" aria-label="Platform activity charts">
+      <article class="panel min-w-0 rounded-2xl p-4 sm:p-5">
+        <div class="mb-2"><h2 class="font-semibold">User growth</h2><p class="mt-1 text-xs text-slate-500">Cumulative accounts and new registrations in each interval</p></div>
+        <div id="userGrowthChart" class="min-w-0"></div>
+        <p id="userGrowthEmpty" class="hidden py-8 text-center text-sm text-slate-500">No registration records in the selected range.</p>
+      </article>
+      <article class="panel min-w-0 rounded-2xl p-4 sm:p-5">
+        <div class="mb-2"><h2 class="font-semibold">Transaction activity</h2><p class="mt-1 text-xs text-slate-500">Transactions recorded by transaction date</p></div>
+        <div id="transactionActivityChart" class="min-w-0"></div>
+        <p id="transactionActivityEmpty" class="hidden py-8 text-center text-sm text-slate-500">No transaction records in the selected range.</p>
+      </article>
+    </section>
+  </main>
+  <script src="/static/js/admin-analytics.js"></script>
+</body>
+</html>

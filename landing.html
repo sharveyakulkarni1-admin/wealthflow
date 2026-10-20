@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080b1b">
+  <meta name="description" content="Bring your spending, budgets, savings goals, and financial insights together with WealthFlow.">
+  <title>WealthFlow — Your money, in better focus</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #080b1b;
+      --panel: #10152b;
+      --panel-soft: rgba(18, 25, 49, .78);
+      --line: rgba(163, 174, 211, .14);
+      --muted: #a5adc4;
+      --text: #f6f7ff;
+      --purple: #9d8cff;
+      --blue: #7c9cff;
+      --green: #68dfb4;
+      --content: 1160px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 72% 3%, rgba(85, 70, 205, .21), transparent 34rem),
+        radial-gradient(ellipse at 0% 48%, rgba(41, 90, 166, .10), transparent 32rem),
+        var(--page);
+      color: var(--text);
+      font: 16px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { color: inherit; font: inherit; }
+    .wrap { width: min(var(--content), calc(100% - 48px)); margin-inline: auto; }
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      border-bottom: 1px solid rgba(163, 174, 211, .1);
+      background: rgba(8, 11, 27, .82);
+      backdrop-filter: blur(18px);
+    }
+    .nav { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .brand { display: inline-flex; align-items: center; gap: 11px; font-size: 17px; font-weight: 750; letter-spacing: -.03em; }
+    .brand-mark {
+      width: 38px; height: 38px; display: grid; place-items: center; border-radius: 13px;
+      background: linear-gradient(145deg, #4b9bff, #7957ef 70%, #a05cf6);
+      box-shadow: 0 8px 28px rgba(94, 87, 232, .31);
+    }
+    .brand-mark svg { width: 21px; height: 21px; }
+    .nav-links { display: flex; align-items: center; gap: 30px; color: #bac1d6; font-size: 13px; }
+    .nav-links a, .footer-links a { transition: color .18s ease; }
+    .nav-links a:hover, .footer-links a:hover { color: white; }
+    .nav-actions { display: flex; align-items: center; gap: 18px; font-size: 13px; }
+    .login-link { color: #c5cbe0; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      min-height: 46px; padding: 0 19px; border: 1px solid transparent; border-radius: 13px;
+      font-size: 14px; font-weight: 680; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .button:hover { transform: translateY(-2px); }
+    .button-primary { background: linear-gradient(120deg, #6e73f5, #865bf0); box-shadow: 0 10px 30px rgba(98, 82, 222, .25); }
+    .button-primary:hover { box-shadow: 0 13px 34px rgba(98, 82, 222, .38); }
+    .button-quiet { border-color: var(--line); background: rgba(255,255,255,.025); color: #e2e5f4; }
+    .button-quiet:hover { border-color: rgba(175, 162, 255, .42); }
+    .menu-toggle { display: none; width: 42px; height: 42px; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); cursor: pointer; }
+    .hero { position: relative; overflow: hidden; padding: 83px 0 70px; }
+    .hero-grid { display: grid; grid-template-columns: .92fr 1.08fr; align-items: center; gap: 52px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 9px; color: #c3b9ff; font-size: 11px; font-weight: 740; letter-spacing: .13em; text-transform: uppercase; }
+    .eyebrow-dot { width: 7px; height: 7px; border-radius: 50%; background: #9b85ff; box-shadow: 0 0 14px #9b85ff; }
+    h1 { max-width: 610px; margin: 18px 0 20px; font-size: clamp(43px, 5.3vw, 67px); line-height: 1.045; letter-spacing: -.062em; }
+    .gradient-text { color: #b6a8ff; background: linear-gradient(100deg, #b9a8ff 3%, #83baff 78%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-copy { max-width: 500px; margin: 0; color: #aeb5cb; font-size: 16px; line-height: 1.8; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 29px; }
+    .hero-note { margin-top: 16px; color: #7f89a5; font-size: 11px; }
+    .hero-visual { position: relative; min-width: 0; perspective: 1100px; }
+    .visual-glow { position: absolute; inset: 10% -5% 0 4%; border-radius: 50%; background: rgba(85, 81, 231, .21); filter: blur(70px); }
+    .dashboard-preview {
+      position: relative; padding: 12px; overflow: hidden; border: 1px solid rgba(179, 185, 233, .2);
+      border-radius: 22px; background: rgba(14, 19, 39, .96); box-shadow: 0 32px 90px rgba(0,0,0,.42), 0 0 48px rgba(94, 85, 214, .12);
+      transform: rotateY(-5deg) rotateX(2deg); animation: settle .8s ease both;
+    }
+    .preview-top { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px 13px; color: #aab2ca; font-size: 9px; }
+    .preview-dots { display: flex; gap: 4px; }
+    .preview-dots i { width: 6px; height: 6px; border-radius: 50%; background: #59617c; }
+    .preview-title { color: #f2f3fb; font-size: 10px; font-weight: 700; }
+    .preview-body { display: grid; grid-template-columns: 104px 1fr; min-height: 294px; border: 1px solid rgba(163,174,211,.09); border-radius: 13px; background: #0b1021; overflow: hidden; }
+    .preview-side { padding: 14px 8px; border-right: 1px solid rgba(163,174,211,.09); }
+    .preview-logo { display: flex; align-items: center; gap: 6px; margin-bottom: 22px; color: #f4f5ff; font-size: 8px; font-weight: 700; }
+    .preview-logo i { width: 16px; height: 16px; border-radius: 5px; background: linear-gradient(135deg,#4999ff,#8957ef); }
+    .preview-nav { display: grid; gap: 8px; }
+    .preview-nav span { padding: 6px; border-radius: 5px; color: #78819d; font-size: 7px; }
+    .preview-nav span:first-child { color: #dcd8ff; background: rgba(123,104,238,.17); }
+    .preview-main { padding: 16px 14px; }
+    .preview-main h2 { margin: 0; color: #f2f3fb; font-size: 11px; }
+    .preview-main > p { margin: 3px 0 13px; color: #717b97; font-size: 7px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .stat { padding: 9px; border: 1px solid rgba(163,174,211,.1); border-radius: 8px; background: #11182c; }
+    .stat small { display: block; color: #8790aa; font-size: 6px; }
+    .stat strong { display: block; margin-top: 4px; color: #eff0fb; font-size: 11px; }
+    .stat em { display: block; margin-top: 3px; color: #64d6a8; font-size: 6px; font-style: normal; }
+    .chart-card { margin-top: 8px; padding: 9px; border: 1px solid rgba(163,174,211,.1); border-radius: 8px; background: #11182c; }
+    .chart-label { display: flex; justify-content: space-between; color: #aab2ca; font-size: 7px; }
+    .chart-label span:last-child { color: #77819d; }
+    .chart { display: block; width: 100%; height: 96px; margin-top: 4px; }
+    .preview-foot { display: flex; justify-content: space-between; margin-top: 8px; color: #737d98; font-size: 6px; }
+    .preview-foot b { color: #9f94ff; font-weight: 500; }
+    .sample-label { position: absolute; right: 20px; bottom: 18px; padding: 5px 9px; border: 1px solid rgba(191,194,229,.16); border-radius: 20px; background: rgba(8,11,27,.86); color: #9fa8c3; font-size: 9px; }
+    .trust-row { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; margin-top: 29px; color: #828ca8; font-size: 10px; }
+    .trust-row span { display: inline-flex; align-items: center; gap: 7px; }
+    .trust-row svg { width: 14px; height: 14px; color: #8c83e9; }
+    section.content-section { padding: 82px 0; }
+    .section-heading { max-width: 650px; margin: 0 auto 38px; text-align: center; }
+    .section-kicker { color: #a99aff; font-size: 10px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
+    h2 { margin: 11px 0 11px; font-size: clamp(30px, 4vw, 43px); line-height: 1.15; letter-spacing: -.045em; }
+    .section-heading p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
+    .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; }
+    .feature-card { min-height: 190px; padding: 21px; border: 1px solid var(--line); border-radius: 17px; background: linear-gradient(145deg, rgba(20,26,51,.83), rgba(13,17,36,.77)); transition: transform .2s ease, border-color .2s ease; }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(153,139,255,.35); }
+    .feature-icon { display: grid; width: 38px; height: 38px; place-items: center; margin-bottom: 17px; border: 1px solid rgba(153,139,255,.18); border-radius: 12px; background: rgba(119,100,235,.13); color: #b2a6ff; }
+    .feature-icon svg { width: 19px; height: 19px; }
+    .feature-card h3 { margin: 0 0 7px; font-size: 14px; letter-spacing: -.015em; }
+    .feature-card p { margin: 0; color: #9da6bf; font-size: 11px; line-height: 1.7; }
+    .gallery-section { border-top: 1px solid rgba(163,174,211,.07); border-bottom: 1px solid rgba(163,174,211,.07); background: linear-gradient(180deg, rgba(18,22,45,.35), transparent); }
+    .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .gallery-card { overflow: hidden; border: 1px solid var(--line); border-radius: 17px; background: rgba(15,20,41,.82); }
+    .gallery-caption { padding: 13px 16px 15px; }
+    .gallery-caption h3 { margin: 0 0 3px; font-size: 13px; }
+    .gallery-caption p { margin: 0; color: #929bb4; font-size: 10px; }
+    .mini-screen { height: 165px; padding: 12px; overflow: hidden; background: #0c1123; }
+    .mini-bar { display: flex; align-items: center; justify-content: space-between; height: 15px; margin-bottom: 9px; color: #e4e6f4; font-size: 7px; }
+    .mini-brand { display: flex; align-items: center; gap: 5px; font-weight: 650; }
+    .mini-brand i { width: 9px; height: 9px; border-radius: 3px; background: linear-gradient(135deg,#53a1ff,#865bea); }
+    .mini-action { width: 36px; height: 12px; border-radius: 4px; background: #6659d8; }
+    .mini-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    .mini-stat { height: 37px; padding: 5px; border: 1px solid rgba(163,174,211,.1); border-radius: 6px; background: #131a30; }
+    .mini-stat i, .mini-stat b { display: block; height: 4px; border-radius: 3px; background: #59627e; }
+    .mini-stat b { width: 62%; height: 7px; margin-top: 6px; background: #d9dcf0; }
+    .mini-panel { position: relative; height: 74px; margin-top: 7px; padding: 7px; border: 1px solid rgba(163,174,211,.1); border-radius: 6px; background: #131a30; }
+    .mini-panel::before, .mini-panel::after { position: absolute; content: ""; left: 8px; right: 8px; height: 1px; background: rgba(163,174,211,.1); }
+    .mini-panel::before { top: 28px; } .mini-panel::after { top: 49px; }
+    .bars { display: flex; align-items: end; justify-content: space-around; height: 55px; }
+    .bars i { width: 8%; border-radius: 3px 3px 0 0; background: linear-gradient(#9282ff,#5853bc); }
+    .rows { display: grid; gap: 7px; padding: 3px 1px; }
+    .rows i { display: block; height: 13px; border-radius: 4px; background: linear-gradient(90deg,#202943 15%,#141b30 15%); }
+    .budget-items { display: grid; gap: 9px; padding-top: 4px; }
+    .budget-line { color: #8f99b2; font-size: 6px; }
+    .budget-line b { display: block; height: 5px; margin-top: 4px; border-radius: 4px; background: #202943; }
+    .budget-line b i { display: block; height: 5px; border-radius: inherit; background: linear-gradient(90deg,#7366ec,#9d83ff); }
+    .goal-preview { display: flex; align-items: center; gap: 14px; padding: 13px 8px; }
+    .goal-ring { width: 65px; height: 65px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(#8f7cff 0 72%, #202943 72%); }
+    .goal-ring i { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: #11172c; color: #d9d6ff; font-size: 8px; font-style: normal; }
+    .goal-copy { display: grid; gap: 7px; color: #abb3ca; font-size: 7px; }
+    .goal-copy b { width: 86px; height: 6px; border-radius: 3px; background: #dfe1f2; }
+    .analytics-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .donut { width: 72px; height: 72px; margin: 10px auto; border-radius: 50%; background: conic-gradient(#8274f5 0 39%,#4b9bee 39% 68%,#52c69d 68% 85%,#34405f 85%); position: relative; }
+    .donut::after { position: absolute; inset: 14px; border-radius: 50%; background: #131a30; content: ""; }
+    .ai-bubble { max-width: 84%; margin: 8px 0; padding: 8px; border: 1px solid rgba(163,174,211,.1); border-radius: 8px 8px 8px 2px; background: #161d36; color: #bcc4dc; font-size: 7px; line-height: 1.6; }
+    .ai-bubble.user { margin-left: auto; border: 0; border-radius: 8px 8px 2px 8px; background: #39367b; color: #e8e6ff; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+    .step { position: relative; padding: 22px 20px; border-top: 1px solid var(--line); }
+    .step-number { display: grid; width: 34px; height: 34px; place-items: center; margin-bottom: 16px; border: 1px solid rgba(153,139,255,.25); border-radius: 11px; background: rgba(119,100,235,.13); color: #c2b8ff; font-size: 12px; font-weight: 750; }
+    .step h3 { margin: 0 0 7px; font-size: 15px; }
+    .step p { margin: 0; color: #9da6bf; font-size: 12px; line-height: 1.75; }
+    .ai-section { padding-top: 45px !important; }
+    .ai-feature {
+      display: grid; grid-template-columns: 1fr .9fr; align-items: center; gap: 40px;
+      padding: 38px; border: 1px solid rgba(158,145,255,.2); border-radius: 23px;
+      background: radial-gradient(ellipse at 85% 40%, rgba(89,77,199,.18), transparent 40%), linear-gradient(135deg, #12172e, #0e1328);
+    }
+    .ai-feature h2 { margin-top: 10px; font-size: clamp(27px, 3.5vw, 37px); }
+    .ai-feature p { color: #a9b1c8; font-size: 13px; line-height: 1.8; }
+    .ai-points { display: grid; gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; color: #c2c9dd; font-size: 11px; }
+    .ai-points li::before { margin-right: 9px; color: var(--green); content: "✓"; }
+    .chat-demo { padding: 17px; border: 1px solid rgba(170,178,222,.15); border-radius: 16px; background: rgba(8,11,27,.64); }
+    .chat-heading { display: flex; align-items: center; gap: 9px; padding-bottom: 12px; border-bottom: 1px solid var(--line); color: #e9eaf8; font-size: 11px; font-weight: 650; }
+    .chat-heading i { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; background: rgba(137,114,248,.18); color: #b9aaff; font-style: normal; }
+    .chat-disclaimer { margin: 11px 0 0; color: #77819d !important; font-size: 9px !important; }
+    .security-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 25px; align-items: stretch; }
+    .security-copy, .security-facts { padding: 27px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel-soft); }
+    .security-copy p { color: #a7afc6; font-size: 13px; line-height: 1.8; }
+    .security-facts { display: grid; gap: 13px; }
+    .security-fact { display: flex; gap: 12px; align-items: flex-start; color: #c8cee0; font-size: 11px; }
+    .security-fact i { width: 25px; height: 25px; display: grid; flex: 0 0 25px; place-items: center; border-radius: 8px; background: rgba(119,100,235,.14); color: #b7aaff; font-size: 12px; font-style: normal; }
+    .security-fact span { color: #929bb4; }
+    .cta-section { padding: 50px 0 82px !important; }
+    .cta-box { padding: 48px 25px; border: 1px solid rgba(158,145,255,.2); border-radius: 23px; background: radial-gradient(ellipse at 50% 0%, rgba(105,89,226,.24), transparent 58%), #10152b; text-align: center; }
+    .cta-box p { margin: 0 auto 22px; color: #aab2ca; font-size: 13px; }
+    footer { border-top: 1px solid var(--line); padding: 26px 0 31px; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+    .footer-copy { color: #7f89a4; font-size: 10px; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 19px; color: #a7afc5; font-size: 10px; }
+    .legal-note { max-width: var(--content); margin: 13px auto 0; color: #727c96; font-size: 9px; }
+    @keyframes settle { from { opacity: 0; transform: translateY(12px) rotateY(-5deg) rotateX(2deg); } to { opacity: 1; transform: rotateY(-5deg) rotateX(2deg); } }
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 35px; }
+      .hero-copy { max-width: 620px; }
+      .hero-visual { width: min(100%, 650px); margin-inline: auto; }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+      .ai-feature { grid-template-columns: 1fr 1fr; gap: 22px; padding: 27px; }
+    }
+    @media (max-width: 680px) {
+      .wrap { width: min(var(--content), calc(100% - 34px)); }
+      .nav { min-height: 66px; }
+      .menu-toggle { display: grid; }
+      .nav-links {
+        position: absolute; top: 65px; left: 0; right: 0; display: none; align-items: stretch;
+        gap: 0; padding: 8px 17px 14px; border-bottom: 1px solid var(--line); background: #0c1022;
+      }
+      .nav-links.open { display: grid; }
+      .nav-links a { padding: 10px 5px; }
+      .nav-actions { gap: 11px; margin-left: auto; }
+      .nav-actions .button { min-height: 39px; padding-inline: 12px; font-size: 11px; }
+      .nav-actions .login-link { display: none; }
+      .hero { padding: 58px 0 45px; }
+      h1 { font-size: clamp(41px, 12vw, 59px); }
+      .hero-copy { font-size: 14px; }
+      .button { min-height: 44px; padding-inline: 15px; font-size: 12px; }
+      .preview-body { grid-template-columns: 77px 1fr; min-height: 250px; }
+      .preview-side { padding-inline: 6px; }
+      .preview-main { padding: 12px 9px; }
+      .stat { padding: 6px; }
+      .stat strong { font-size: 9px; }
+      .chart { height: 76px; }
+      .trust-row { gap: 12px; }
+      section.content-section { padding: 61px 0; }
+      .feature-card { min-height: 180px; padding: 16px; }
+      .gallery-grid { gap: 10px; }
+      .mini-screen { height: 145px; padding: 9px; }
+      .gallery-caption { padding: 11px; }
+      .steps { grid-template-columns: 1fr; gap: 6px; }
+      .step { padding: 17px 14px; }
+      .ai-feature { grid-template-columns: 1fr; padding: 22px; }
+      .security-grid { grid-template-columns: 1fr; gap: 12px; }
+      .security-copy, .security-facts { padding: 21px; }
+      .footer-inner { align-items: flex-start; flex-direction: column; }
+      .legal-note { width: min(var(--content), calc(100% - 34px)); }
+    }
+    @media (max-width: 390px) {
+      .brand { gap: 7px; font-size: 15px; }
+      .brand-mark { width: 34px; height: 34px; }
+      .nav-actions .button { padding-inline: 9px; }
+      .feature-grid { gap: 9px; }
+      .feature-card { padding: 13px; }
+      .feature-card h3 { font-size: 12px; }
+      .feature-card p { font-size: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="brand" href="/" aria-label="WealthFlow home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-7h6v7M8 10h.01M16 10h.01"/></svg></span>
+        <span>WealthFlow</span>
+      </a>
+      <button id="menuToggle" class="menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primaryNav">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <nav id="primaryNav" class="nav-links" aria-label="Main navigation">
+        <a href="#features">Features</a><a href="#ai-agent">AI Wealth Agent</a><a href="#security">Security</a><a href="#about">About</a>
+      </nav>
+      <div class="nav-actions"><a class="login-link" href="/login">Log in</a><a class="button button-primary" href="/login?mode=signup">Get Started</a></div>
+    </div>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="eyebrow"><i class="eyebrow-dot"></i> A clearer view of your money</span>
+          <h1>Take control of your <span class="gradient-text">financial future.</span></h1>
+          <p class="hero-copy">Bring your transactions, budgets, and savings goals into one thoughtful workspace. See where your money goes and make your next decision with more clarity.</p>
+          <div class="hero-actions"><a class="button button-primary" href="/login?mode=signup">Get Started Free <span aria-hidden="true">→</span></a><a class="button button-quiet" href="#features">Explore Features</a></div>
+          <p class="hero-note">Free to create an account · Your financial data stays tied to your account</p>
+          <div class="trust-row">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 4 6v5c0 5 3.4 8.1 8 10 4.6-1.9 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>Private account data</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5m0 14h17M7 15l4-4 3 2 6-7"/></svg>Useful trends &amp; insights</span>
+          </div>
+        </div>
+        <div class="hero-visual" aria-label="Illustrative preview of the WealthFlow dashboard">
+          <div class="visual-glow"></div>
+          <div class="dashboard-preview">
+            <div class="preview-top"><span class="preview-dots"><i></i><i></i><i></i></span><span class="preview-title">WealthFlow · Dashboard</span><span>•••</span></div>
+            <div class="preview-body">
+              <aside class="preview-side" aria-hidden="true"><div class="preview-logo"><i></i> WealthFlow</div><div class="preview-nav"><span>◈ &nbsp; Dashboard</span><span>↔ &nbsp; Transactions</span><span>◎ &nbsp; Saving Goals</span><span>▤ &nbsp; Budgets</span><span>⌁ &nbsp; Analytics</span></div></aside>
+              <div class="preview-main">
+                <h2>Dashboard</h2><p>Your personal finance overview</p>
+                <div class="stat-grid"><div class="stat"><small>Income</small><strong>$5,240</strong><em>Month to date</em></div><div class="stat"><small>Expenses</small><strong>$2,180</strong><em>Month to date</em></div><div class="stat"><small>Net cashflow</small><strong>$3,060</strong><em>Income less expenses</em></div></div>
+                <div class="chart-card"><div class="chart-label"><span>Income &amp; expenses</span><span>Recent months</span></div>
+                  <svg class="chart" viewBox="0 0 440 100" preserveAspectRatio="none" role="img" aria-label="Illustrative income and expense chart">
+                    <defs><linearGradient id="fillOne" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#8b7cff" stop-opacity=".28"/><stop offset="1" stop-color="#8b7cff" stop-opacity="0"/></linearGradient></defs>
+                    <path d="M0 82 C38 78 48 53 82 62 S128 79 160 48 S208 68 244 40 S290 52 326 22 S384 48 440 13V100H0Z" fill="url(#fillOne)"/>
+                    <path d="M0 82 C38 78 48 53 82 62 S128 79 160 48 S208 68 244 40 S290 52 326 22 S384 48 440 13" fill="none" stroke="#a396ff" stroke-width="2"/>
+                    <path d="M0 91 C40 88 55 74 82 80 S128 87 160 70 S205 82 244 65 S290 77 326 57 S388 73 440 52" fill="none" stroke="#4e9be8" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <path d="M0 25H440M0 50H440M0 75H440" stroke="#27304a" stroke-width=".7"/>
+                  </svg>
+                  <div class="preview-foot"><span>Jan &nbsp;&nbsp; Feb &nbsp;&nbsp; Mar &nbsp;&nbsp; Apr &nbsp;&nbsp; May</span><b>Illustrative sample</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="sample-label">Illustrative sample · not account data</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="content-section">
+      <div class="wrap">
+        <div class="section-heading"><span class="section-kicker">Everything in one place</span><h2>A more organized way to manage money</h2><p>Practical tools for the everyday details and the bigger financial picture, all in your WealthFlow account.</p></div>
+        <div class="feature-grid">
+          <article class="feature-card"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></span><h3>Transaction tracking</h3><p>Record income and expenses, search and filter the ledger, and edit or remove entries when needed.</p></article>
+          <article class="feature-card"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5m0 14h16M7 15l3-4 3 2 5-7"/></svg></span><h3>Budgets &amp; alerts</h3><p>Set monthly category limits and review budget progress and projected threshold alerts.</p></article>
+          <article class="feature-card"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M8 2v3m8-3v3"/></svg></span><h3>Savings goals</h3><p>Create goals, add contributions or withdrawals, and follow progress toward your target.</p></article>
+          <article class="feature-card"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v3m0 12v3M4.2 4.2l2.1 2.1m11.4 11.4 2.1 2.1M3 12h3m12 0h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="4"/></svg></span><h3>AI Wealth Agent</h3><p>Ask questions about your finances using an AI chat grounded in your account's financial summaries.</p></article>
+          <article class="feature-card"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5m0 14h16"/><path d="m7 15 4-5 3 2 5-7"/></svg></span><h3>Financial analytics</h3><p>Explore income and expense charts, category breakdowns, and recorded cashflow trends.</p></article>
+          <article class="feature-card"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 20h14M12 16V4m-5 5 5-5 5 5"/></svg></span><h3>Reports &amp; exports</h3><p>Download your transaction data as CSV or Excel for your own records and review.</p></article>
+          <article class="feature-card"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 17 9 11l4 4 8-9M16 6h5v5M4 21h16"/></svg></span><h3>Net worth estimates</h3><p>Track the asset and liability balances you record, with history from the date you start tracking.</p></article>
+          <article class="feature-card"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg></span><h3>Recurring transactions</h3><p>Schedule recurring transaction rules and review smart insights from recorded activity.</p></article>
+          <article class="feature-card"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg></span><h3>Account &amp; security</h3><p>Manage profile preferences, display currency, password, and your signed-in session.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section gallery-section" aria-labelledby="galleryTitle">
+      <div class="wrap">
+        <div class="section-heading"><span class="section-kicker">A look inside</span><h2 id="galleryTitle">Designed for a clearer view</h2><p>These illustrative previews represent existing WealthFlow screens. All figures and content below are sample UI elements, not screenshots or personal account data.</p></div>
+        <div class="gallery-grid">
+          <article class="gallery-card"><div class="mini-screen"><div class="mini-bar"><span class="mini-brand"><i></i> Dashboard</span><span>•••</span></div><div class="mini-stats"><span class="mini-stat"><i></i><b></b></span><span class="mini-stat"><i></i><b></b></span><span class="mini-stat"><i></i><b></b></span></div><div class="mini-panel"><div class="bars"><i style="height:31%"></i><i style="height:56%"></i><i style="height:43%"></i><i style="height:77%"></i><i style="height:62%"></i><i style="height:88%"></i><i style="height:70%"></i><i style="height:95%"></i><i style="height:67%"></i></div></div></div><div class="gallery-caption"><h3>Dashboard</h3><p>Balances, summaries, charts, and insights.</p></div></article>
+          <article class="gallery-card"><div class="mini-screen"><div class="mini-bar"><span class="mini-brand"><i></i> Transactions</span><i class="mini-action"></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="gallery-caption"><h3>Transactions</h3><p>Search, filter, manage, and import records.</p></div></article>
+          <article class="gallery-card"><div class="mini-screen"><div class="mini-bar"><span class="mini-brand"><i></i> Budgets</span><i class="mini-action"></i></div><div class="budget-items"><span class="budget-line">Category limit<b><i style="width:62%"></i></b></span><span class="budget-line">Monthly plan<b><i style="width:41%"></i></b></span><span class="budget-line">Everyday spend<b><i style="width:84%"></i></b></span></div></div><div class="gallery-caption"><h3>Budgets</h3><p>Category limits and monthly progress.</p></div></article>
+          <article class="gallery-card"><div class="mini-screen"><div class="mini-bar"><span class="mini-brand"><i></i> Saving Goals</span><i class="mini-action"></i></div><div class="goal-preview"><div class="goal-ring"><i>72%</i></div><div class="goal-copy"><b></b><span>Progress toward target</span><span>Contributions &amp; history</span></div></div></div><div class="gallery-caption"><h3>Savings goals</h3><p>Track targets and goal-specific contributions.</p></div></article>
+          <article class="gallery-card"><div class="mini-screen"><div class="mini-bar"><span class="mini-brand"><i></i> Analytics &amp; Reports</span><i class="mini-action"></i></div><div class="analytics-preview"><div class="mini-panel"><div class="bars"><i style="height:42%"></i><i style="height:73%"></i><i style="height:52%"></i><i style="height:91%"></i><i style="height:64%"></i></div></div><div class="mini-panel"><div class="donut"></div></div></div></div><div class="gallery-caption"><h3>Analytics &amp; reports</h3><p>Cashflow trends and category breakdowns.</p></div></article>
+          <article class="gallery-card"><div class="mini-screen"><div class="mini-bar"><span class="mini-brand"><i></i> AI Wealth Agent</span><span>Read-only</span></div><div class="ai-bubble user">Where did my spending change?</div><div class="ai-bubble">I can help review changes in the financial summaries available for your account.</div></div><div class="gallery-caption"><h3>AI Wealth Agent</h3><p>Ask about spending, budgets, and trends.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="content-section">
+      <div class="wrap">
+        <div class="section-heading"><span class="section-kicker">Simple by design</span><h2>From scattered details to useful context</h2><p>WealthFlow brings everyday money tracking into a clear, approachable routine.</p></div>
+        <div class="steps">
+          <article class="step"><span class="step-number">01</span><h3>Create your account</h3><p>Sign up with your email and choose a display currency. No bank connection is configured; you enter or import your records.</p></article>
+          <article class="step"><span class="step-number">02</span><h3>Organize your finances</h3><p>Track transactions, set budget limits, create saving goals, and schedule recurring entries in one place.</p></article>
+          <article class="step"><span class="step-number">03</span><h3>Understand your progress</h3><p>Review charts and summaries, export your records, or ask the AI agent questions about your available financial data.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="ai-agent" class="content-section ai-section">
+      <div class="wrap ai-feature">
+        <div><span class="section-kicker">Financial context, conversationally</span><h2>Meet the AI Wealth Agent</h2><p>Ask natural-language questions about spending, income, budgets, saving goals, and trends. The agent uses the signed-in account's financial summaries to help explain what the data shows.</p><ul class="ai-points"><li>Gemini-backed chat when the server API key is configured</li><li>Conversation follow-ups supported in the app</li><li>Read-only: it cannot edit transactions or move money</li></ul><a class="button button-quiet" style="margin-top:20px" href="/login#ai-wealth-agent">Explore the AI Agent →</a></div>
+        <div class="chat-demo" aria-label="Illustrative AI chat preview"><div class="chat-heading"><i>✦</i> WealthFlow AI <span style="margin-left:auto;color:#75d5ac;font-size:9px;font-weight:500">Read-only</span></div><div class="ai-bubble user">What category had the most spending?</div><div class="ai-bubble">I can review the expense categories recorded in your account and summarize the largest one for the period.</div><p class="chat-disclaimer">Illustrative sample conversation. Responses depend on your account data and AI service configuration.</p></div>
+      </div>
+    </section>
+
+    <section id="security" class="content-section">
+      <div class="wrap">
+        <div class="section-heading"><span class="section-kicker">Your account, your records</span><h2>Privacy starts with clear boundaries</h2><p>WealthFlow uses account-scoped records and established authentication controls. No unsupported security guarantees.</p></div>
+        <div class="security-grid">
+          <div class="security-copy"><h3 style="margin:0;font-size:16px">Security information, plainly stated</h3><p>Passwords are stored as bcrypt hashes rather than plain text. Sign-in uses an HttpOnly session cookie, and financial records are associated with the signed-in user. Cookie transport security depends on the deployment configuration; use HTTPS for remote deployments.</p><p>WealthFlow does not connect to banks in this installation. Financial information is entered or imported by the account holder. The AI chat requires a server-side Gemini API key and sends relevant account summaries to that provider when used.</p></div>
+          <div class="security-facts"><div class="security-fact"><i>✓</i><div>Hashed passwords<br><span>Bcrypt password hashing is used.</span></div></div><div class="security-fact"><i>✓</i><div>Account-scoped records<br><span>Data APIs require the signed-in account.</span></div></div><div class="security-fact"><i>✓</i><div>HttpOnly session cookie<br><span>Cookie security settings depend on deployment.</span></div></div><div class="security-fact"><i>i</i><div>AI service disclosure<br><span>Relevant financial summaries are sent to Gemini when you use AI chat.</span></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section cta-section">
+      <div class="wrap cta-box"><span class="section-kicker">Start with a clearer picture</span><h2>Make your money easier to understand.</h2><p>Set up your WealthFlow account and build a financial view that works for you.</p><a class="button button-primary" href="/login?mode=signup">Create your free account <span aria-hidden="true">→</span></a><p style="margin-top:13px;margin-bottom:0;font-size:10px">Already have an account? <a href="/login" style="color:#c2b8ff;text-decoration:underline">Log in</a></p></div>
+    </section>
+  </main>
+  <footer>
+    <div class="wrap footer-inner">
+      <a class="brand" href="/" aria-label="WealthFlow home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-7h6v7M8 10h.01M16 10h.01"/></svg></span><span>WealthFlow</span></a>
+      <div class="footer-links"><a href="#features">Features</a><a href="#ai-agent">AI Agent</a><a href="#security">Security</a><a href="/login">Log in</a><a href="#helpNote">Help &amp; Support</a></div>
+      <span class="footer-copy">© <span id="year"></span> WealthFlow</span>
+    </div>
+    <p id="helpNote" class="legal-note">Help &amp; Support is available inside the signed-in app. Privacy policy and terms pages have not been published for this installation.</p>
+  </footer>
+  <script>
+    const menuToggle = document.getElementById("menuToggle");
+    const primaryNav = document.getElementById("primaryNav");
+    menuToggle.addEventListener("click", () => {
+      const open = menuToggle.getAttribute("aria-expanded") !== "true";
+      menuToggle.setAttribute("aria-expanded", String(open));
+      menuToggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+      primaryNav.classList.toggle("open", open);
+    });
+    primaryNav.addEventListener("click", event => {
+      if (event.target.closest("a")) {
+        primaryNav.classList.remove("open");
+        menuToggle.setAttribute("aria-expanded", "false");
+        menuToggle.setAttribute("aria-label", "Open navigation menu");
+      }
+    });
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

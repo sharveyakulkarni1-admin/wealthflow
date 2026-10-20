@@ -1,0 +1,16 @@
+IMPORTANT INFORMATION
+
+Copyright:
+This WealthFlow program is an original software project created for educational and personal use. The source code, design, files, and documentation should not be copied, redistributed, or presented as someone else's work without permission. Third-party libraries and frameworks used by the project remain subject to their own licenses.
+
+How the program works:
+1. Open the WealthFlow project folder.
+2. Double-click the "start.bat" file.
+3. A terminal window will start the FastAPI server.
+4. Keep the terminal window open while using the program.
+5. Open a web browser and go to: http://127.0.0.1:8000
+6. Use the WealthFlow website normally.
+7. When finished, close the website and press Ctrl+C in the terminal to stop the server.
+
+Important:
+The website runs locally on this computer. If the start.bat file is not running, the website will not be reachable. Starting the program does not require opening VS Code every time.

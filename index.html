@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WealthFlow — Advanced Wealth & Expense Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          boxShadow: { glow: '0 0 40px rgba(99,102,241,.18)' },
+          animation: { float: 'float 6s ease-in-out infinite' },
+          keyframes: { float: { '0%,100%': { transform:'translateY(0)' }, '50%': { transform:'translateY(-5px)' } } }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background: radial-gradient(circle at 10% 0%, rgba(79,70,229,.13), transparent 35%), #020617; }
+    .glass { background: rgba(15,23,42,.72); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,.12); }
+    .input { width:100%; border-radius:.75rem; background:#0f172a; border:1px solid #334155; padding:.7rem .85rem; outline:none; }
+    .input:focus { border-color:#818cf8; box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+    .btn { border-radius:.75rem; padding:.65rem 1rem; font-weight:600; transition:.2s; }
+    .btn:hover { transform:translateY(-1px); }
+    #app.hidden { display:none; }
+    .calendar-day { min-width:0; min-height:6.25rem; }
+    .calendar-event { max-width:100%; }
+    .calendar-event-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    @media (max-width:639px) {
+      .calendar-day { min-height:4.1rem; padding:.3rem !important; }
+      .calendar-event { justify-content:center; padding:.2rem !important; }
+      .calendar-event-label { display:none; }
+    }
+    #sidebar { width:17rem; transition:width .22s ease, transform .22s ease; }
+    #sidebarNav { scrollbar-width:thin; scrollbar-color:#334155 transparent; }
+    .sidebar-nav-link { border-left:2px solid transparent; transition:background-color .16s ease,color .16s ease,border-color .16s ease; }
+    .sidebar-nav-link:hover { background:rgba(51,65,85,.45); color:#f8fafc; }
+    .sidebar-nav-link[aria-current="page"] { background:rgba(99,102,241,.16); border-left-color:#a78bfa; color:#e0e7ff; }
+    .sidebar-nav-link:focus-visible, #sidebar button:focus-visible, header button:focus-visible { outline:2px solid #a78bfa; outline-offset:2px; }
+    body.sidebar-collapsed #sidebar { width:5.25rem; }
+    body.sidebar-collapsed .sidebar-label, body.sidebar-collapsed .sidebar-group-label, body.sidebar-collapsed .sidebar-brand-copy { display:none; }
+    body.sidebar-collapsed .sidebar-nav-link, body.sidebar-collapsed .sidebar-brand { justify-content:center; }
+    body.sidebar-collapsed .sidebar-coming-soon { display:none; }
+    body.sidebar-open #sidebarOverlay { display:block; }
+    @media (max-width:1023px) {
+      #sidebar { transform:translateX(-100%); }
+      body.sidebar-open #sidebar { transform:translateX(0); }
+      body.sidebar-collapsed #sidebar { width:17rem; }
+      body.sidebar-open.sidebar-collapsed .sidebar-label,
+      body.sidebar-open.sidebar-collapsed .sidebar-brand-copy { display:block; }
+      body.sidebar-open.sidebar-collapsed .sidebar-group-label { display:block; }
+      body.sidebar-open.sidebar-collapsed .sidebar-coming-soon { display:inline-flex; }
+      body.sidebar-open.sidebar-collapsed .sidebar-nav-link { justify-content:flex-start; }
+      body.sidebar-open { overflow:hidden; }
+    }
+    @media (prefers-reduced-motion:reduce) {
+      *, *::before, *::after { scroll-behavior:auto !important; transition-duration:.01ms !important; }
+    }
+    html[data-color-scheme="light"] body { background:#f1f5f9; color:#0f172a; }
+    html[data-color-scheme="light"] .glass { background:rgba(255,255,255,.94); border-color:#cbd5e1; backdrop-filter:blur(12px); }
+    html[data-color-scheme="light"] #sidebar,
+    html[data-color-scheme="light"] header { background-color:rgba(255,255,255,.96); border-color:#cbd5e1; }
+    html[data-color-scheme="light"] .bg-slate-950,
+    html[data-color-scheme="light"] .bg-slate-900,
+    html[data-color-scheme="light"] .bg-slate-900\/60,
+    html[data-color-scheme="light"] .bg-slate-900\/70,
+    html[data-color-scheme="light"] .bg-slate-900\/80 { background-color:#f8fafc; }
+    html[data-color-scheme="light"] .input { background-color:#fff; border-color:#cbd5e1; color:#0f172a; }
+    html[data-color-scheme="light"] .bg-slate-800 { background-color:#e2e8f0; color:#1e293b; }
+    html[data-color-scheme="light"] .bg-slate-700 { background-color:#e2e8f0; color:#1e293b; }
+    html[data-color-scheme="light"] .bg-slate-800:hover,
+    html[data-color-scheme="light"] .bg-slate-700:hover { background-color:#cbd5e1; }
+    html[data-color-scheme="light"] .text-white,
+    html[data-color-scheme="light"] .text-slate-100,
+    html[data-color-scheme="light"] .text-slate-200,
+    html[data-color-scheme="light"] .text-slate-300 { color:#1e293b; }
+    html[data-color-scheme="light"] .text-slate-400,
+    html[data-color-scheme="light"] .text-slate-500 { color:#475569; }
+    html[data-color-scheme="light"] .border-slate-700,
+    html[data-color-scheme="light"] .border-slate-800 { border-color:#cbd5e1; }
+  </style>
+</head>
+<body class="min-h-screen text-slate-100">
+<div id="auth" data-auth-mode="{{ auth_mode|default('login') }}" class="min-h-screen grid place-items-center p-6">
+  <div class="glass shadow-glow rounded-3xl p-8 w-full max-w-md">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="h-11 w-11 rounded-2xl bg-indigo-500/20 grid place-items-center"><i data-lucide="landmark"></i></div>
+      <div><h1 class="text-2xl font-bold">WealthFlow</h1><p class="text-sm text-slate-400">Personal wealth command center</p></div>
+    </div>
+    <div class="flex gap-2 mb-6">
+      <button id="loginTab" class="btn bg-indigo-500 flex-1">Login</button>
+      <button id="signupTab" class="btn bg-slate-800 flex-1">Sign up</button>
+    </div>
+    <form id="authForm" class="space-y-4">
+      <div id="nameWrap" class="hidden"><input id="name" class="input" placeholder="Full name"></div>
+      <input id="email" class="input" type="email" placeholder="Email" required>
+      <input id="password" class="input" type="password" placeholder="Password (8+ characters)" required>
+      <select id="authCurrency" class="input"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select>
+      <button class="btn bg-indigo-600 hover:bg-indigo-500 w-full">Continue</button>
+      <p id="authError" class="text-sm text-rose-400"></p>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="hidden min-h-screen lg:flex">
+  <button id="sidebarOverlay" type="button" class="fixed inset-0 z-40 hidden bg-slate-950/70 backdrop-blur-sm lg:hidden" aria-label="Close navigation"></button>
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-800 bg-slate-950 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0">
+    <div class="sidebar-brand flex h-16 shrink-0 items-center gap-3 border-b border-slate-800 px-4">
+      <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 text-white shadow-lg shadow-indigo-950/40"><i data-lucide="landmark" class="h-5 w-5"></i></span>
+      <span class="sidebar-brand-copy min-w-0"><strong class="block text-sm tracking-wide text-white">WealthFlow</strong><span class="text-xs text-slate-500">Personal finance</span></span>
+    </div>
+    <nav id="sidebarNav" class="flex-1 space-y-5 overflow-y-auto px-3 py-5" aria-label="Main navigation"></nav>
+    <div class="border-t border-slate-800 p-3">
+      <div class="sidebar-label truncate px-2 pb-2 text-xs text-slate-400" id="sidebarUserName"></div>
+      <button id="sidebarCollapse" type="button" class="hidden w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-slate-800 hover:text-white lg:flex" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
+        <i data-lucide="panel-left-close" class="h-5 w-5 shrink-0"></i><span class="sidebar-label">Collapse sidebar</span>
+      </button>
+    </div>
+  </aside>
+  <div class="min-w-0 flex-1">
+    <header class="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl">
+      <div class="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
+        <div class="flex min-w-0 items-center gap-3">
+          <button id="mobileNavToggle" type="button" class="btn bg-slate-800 p-2 lg:hidden" aria-label="Open navigation" aria-expanded="false" title="Open navigation"><i data-lucide="menu" class="h-5 w-5"></i></button>
+          <button id="desktopSidebarToggle" type="button" class="btn hidden bg-slate-800 p-2 lg:inline-flex" aria-label="Collapse sidebar" title="Collapse sidebar"><i data-lucide="panel-left-close" class="h-5 w-5"></i></button>
+          <h1 id="pageTitle" class="truncate text-base font-semibold md:text-lg">Dashboard</h1>
+        </div>
+        <select id="baseCurrency" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm" aria-label="Dashboard display currency">
+          <option>USD</option><option>EUR</option><option>GBP</option><option>INR</option>
+        </select>
+      </div>
+    </header>
+
+  <main class="mx-auto max-w-[1600px] space-y-6 p-4 md:p-6">
+    <div id="page-dashboard" class="wealth-page space-y-6">
+    <section id="dashboard" class="scroll-mt-20 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div class="glass rounded-2xl p-5"><p class="text-xs uppercase tracking-wider text-slate-500">Total income</p><div id="totalIncome" class="text-2xl font-bold mt-2">—</div></div>
+      <div class="glass rounded-2xl p-5"><p class="text-xs uppercase tracking-wider text-slate-500">Total expenses</p><div id="totalExpenses" class="text-2xl font-bold mt-2">—</div></div>
+      <div class="glass rounded-2xl p-5"><p class="text-xs uppercase tracking-wider text-slate-500">Projected month-end</p><div id="projected" class="text-2xl font-bold mt-2">—</div></div>
+      <div class="glass rounded-2xl p-5"><p class="text-xs uppercase tracking-wider text-slate-500">Budget burn</p><div id="burn" class="text-2xl font-bold mt-2">—</div></div>
+    </section>
+
+    <section class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="glass rounded-2xl p-5 xl:col-span-2">
+        <div class="flex justify-between items-center"><div><h2 class="font-semibold">Cashflow timeline</h2><p class="text-xs text-slate-500">Income vs expenses</p></div></div>
+        <div id="timelineChart" class="mt-3"></div>
+      </div>
+      <div class="glass rounded-2xl p-5">
+        <h2 class="font-semibold">Current-month categories</h2>
+        <div id="donutChart" class="mt-3"></div>
+      </div>
+    </section>
+    <section id="smart-insights" class="glass rounded-2xl p-5 scroll-mt-20">
+      <div class="mb-4">
+        <h2 class="font-semibold text-lg">Smart Spending Insights</h2>
+        <p class="text-sm text-slate-400">Understand how your spending changes over time.</p>
+      </div>
+      <div id="spendingInsights" class="space-y-3">
+        <p class="text-sm text-slate-400">Your spending insights will appear here.</p>
+      </div>
+    </section>
+
+    <section id="financial-calendar" class="glass rounded-2xl p-4 sm:p-5" aria-labelledby="financialCalendarTitle">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 id="financialCalendarTitle" class="text-lg font-semibold">Financial calendar</h2>
+          <p class="mt-1 text-sm text-slate-400">Scheduled recurring activity and savings-goal deadlines from your account.</p>
+        </div>
+        <div class="flex items-center gap-2" aria-label="Calendar navigation">
+          <button id="calendarPrevious" type="button" class="btn bg-slate-800 px-3" aria-label="Previous month"><i data-lucide="chevron-left" class="h-4 w-4"></i></button>
+          <button id="calendarToday" type="button" class="btn bg-slate-800 px-3">Today</button>
+          <button id="calendarNext" type="button" class="btn bg-slate-800 px-3" aria-label="Next month"><i data-lucide="chevron-right" class="h-4 w-4"></i></button>
+        </div>
+      </div>
+      <p id="calendarStatus" class="mb-3 text-sm text-slate-400" role="status" aria-live="polite">Loading financial calendar…</p>
+      <div id="calendarContent" class="hidden grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <div class="min-w-0">
+          <div class="mb-2 flex items-center justify-between">
+            <h3 id="calendarMonthLabel" class="font-semibold" aria-live="polite"></h3>
+            <div class="flex flex-wrap gap-3 text-xs text-slate-400" aria-label="Calendar event key">
+              <span class="flex items-center gap-1"><i class="h-2 w-2 rounded-full bg-sky-400"></i>Recurring</span>
+              <span class="flex items-center gap-1"><i class="h-2 w-2 rounded-full bg-amber-400"></i>Scheduled bill</span>
+              <span class="flex items-center gap-1"><i class="h-2 w-2 rounded-full bg-emerald-400"></i>Goal deadline</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-7 border-l border-t border-slate-700 text-center text-xs text-slate-400" aria-hidden="true">
+            <div class="border-b border-r border-slate-700 py-2">Mon</div><div class="border-b border-r border-slate-700 py-2">Tue</div><div class="border-b border-r border-slate-700 py-2">Wed</div><div class="border-b border-r border-slate-700 py-2">Thu</div><div class="border-b border-r border-slate-700 py-2">Fri</div><div class="border-b border-r border-slate-700 py-2">Sat</div><div class="border-b border-r border-slate-700 py-2">Sun</div>
+          </div>
+          <div id="calendarDays" class="grid grid-cols-7 border-l border-slate-700" role="grid" aria-label="Financial calendar days"></div>
+          <div id="calendarEventDetails" class="mt-4 rounded-xl border border-slate-700 bg-slate-900/60 p-4" aria-live="polite">
+            <p class="text-sm text-slate-400">Select a calendar event to see its details.</p>
+          </div>
+        </div>
+        <aside class="rounded-xl border border-slate-700 bg-slate-900/40 p-4" aria-labelledby="upcomingEventsTitle">
+          <h3 id="upcomingEventsTitle" class="font-semibold">Upcoming events</h3>
+          <p id="upcomingEventsRange" class="mt-1 text-xs text-slate-500"></p>
+          <div id="calendarUpcomingEvents" class="mt-3 space-y-2"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="net-worth-tracker" class="glass rounded-2xl p-4 sm:p-5" aria-labelledby="netWorthTitle">
+      <div class="mb-4">
+        <h2 id="netWorthTitle" class="text-lg font-semibold">Net worth tracker</h2>
+        <p class="mt-1 text-sm text-slate-400">Track your estimated assets and liabilities. Net worth = assets − liabilities.</p>
+        <p class="mt-1 text-xs text-amber-300/90">These are estimates you enter, not live bank balances. Currency conversion uses the app’s configured rates, not live FX. Transactions and saving-goal balances are not included to prevent double-counting. History starts when you record your first balance; earlier history is not generated.</p>
+      </div>
+      <p id="netWorthStatus" class="mb-3 text-sm text-slate-400" role="status" aria-live="polite">Loading net worth…</p>
+      <div id="netWorthContent" class="hidden space-y-5">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <article class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><p class="text-xs uppercase tracking-wider text-slate-500">Total assets</p><p id="netWorthAssetsTotal" class="mt-2 text-2xl font-bold text-emerald-300">—</p></article>
+          <article class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><p class="text-xs uppercase tracking-wider text-slate-500">Total liabilities</p><p id="netWorthLiabilitiesTotal" class="mt-2 text-2xl font-bold text-amber-300">—</p></article>
+          <article class="rounded-xl border border-indigo-400/20 bg-indigo-500/10 p-4"><p class="text-xs uppercase tracking-wider text-indigo-200/70">Estimated net worth</p><p id="netWorthTotal" class="mt-2 text-2xl font-bold text-indigo-100">—</p></article>
+        </div>
+        <div class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
+          <section class="min-w-0 rounded-xl border border-slate-700 bg-slate-900/40 p-4 xl:col-span-2" aria-labelledby="netWorthHistoryTitle">
+            <h3 id="netWorthHistoryTitle" class="font-semibold">Recorded net-worth history</h3>
+            <p class="mt-1 text-xs text-slate-500">Snapshots are captured when balances change. No historical values are inferred.</p>
+            <div id="netWorthHistoryChart" class="mt-2 min-w-0 max-w-full overflow-hidden"></div>
+          </section>
+          <form id="netWorthForm" class="space-y-3 rounded-xl border border-slate-700 bg-slate-900/40 p-4">
+            <h3 id="netWorthFormTitle" class="font-semibold">Add balance</h3>
+            <label class="block text-xs text-slate-400">Type
+              <select id="netWorthKind" class="input mt-1">
+                <option value="asset">Asset</option>
+                <option value="liability">Liability</option>
+              </select>
+            </label>
+            <label class="block text-xs text-slate-400">Category
+              <select id="netWorthCategory" class="input mt-1">
+                <option value="cash">Cash</option><option value="savings">Savings</option><option value="investment">Investment</option><option value="property">Property</option><option value="vehicle">Vehicle</option><option value="other">Other</option>
+              </select>
+            </label>
+            <label class="block text-xs text-slate-400">Name
+              <input id="netWorthName" class="input mt-1" maxlength="120" required placeholder="e.g. Emergency savings">
+            </label>
+            <label class="block text-xs text-slate-400">Current estimated value
+              <input id="netWorthAmount" class="input mt-1" type="number" min="0.01" max="9999999999999999" step="0.01" required placeholder="0.00">
+            </label>
+            <label class="block text-xs text-slate-400">Currency
+              <select id="netWorthCurrency" class="input mt-1"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select>
+            </label>
+            <div class="flex gap-2">
+              <button id="netWorthSubmit" type="submit" class="btn flex-1 bg-indigo-600 hover:bg-indigo-500">Add balance</button>
+              <button id="netWorthCancel" type="button" class="btn hidden bg-slate-700">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <section class="rounded-xl border border-emerald-500/20 bg-slate-900/40 p-4" aria-labelledby="netWorthAssetsTitle">
+            <div class="mb-3 flex items-center justify-between"><h3 id="netWorthAssetsTitle" class="font-semibold text-emerald-200">Assets</h3><span id="netWorthAssetsCount" class="text-xs text-slate-500"></span></div>
+            <div id="netWorthAssetsList" class="space-y-2"></div>
+          </section>
+          <section class="rounded-xl border border-amber-500/20 bg-slate-900/40 p-4" aria-labelledby="netWorthLiabilitiesTitle">
+            <div class="mb-3 flex items-center justify-between"><h3 id="netWorthLiabilitiesTitle" class="font-semibold text-amber-200">Liabilities</h3><span id="netWorthLiabilitiesCount" class="text-xs text-slate-500"></span></div>
+            <div id="netWorthLiabilitiesList" class="space-y-2"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <div id="page-transactions" class="wealth-page hidden space-y-6">
+    <section id="transactions" class="scroll-mt-20 grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="glass rounded-2xl p-5 xl:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <div><h2 class="font-semibold">Ledger</h2><p class="text-xs text-slate-500">Search, filter, intersect tags and amounts</p></div>
+          <div class="flex gap-2">
+            <a class="btn bg-slate-800" href="/api/export/csv">CSV</a>
+            <a class="btn bg-slate-800" href="/api/export/xlsx">Excel</a>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+          <input id="search" class="input col-span-2" placeholder="Search merchant, note, category">
+          <select id="kindFilter" class="input"><option value="">All types</option><option value="income">Income</option><option value="expense">Expense</option></select>
+          <input id="minAmount" class="input" type="number" min="0" placeholder="Min">
+          <input id="maxAmount" class="input" type="number" min="0" placeholder="Max">
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-slate-500 border-b border-slate-800"><tr><th class="text-left p-3">Date</th><th class="text-left p-3">Merchant</th><th class="text-left p-3">Category</th><th class="text-right p-3">Amount</th><th class="text-right p-3"></th></tr></thead>
+            <tbody id="ledger"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="glass rounded-2xl p-5">
+          <h2 id="txFormTitle" class="font-semibold mb-4">Add transaction</h2>
+          <form id="txForm" class="space-y-3">
+            <div class="grid grid-cols-2 gap-2"><input id="txDate" class="input" type="date" required><select id="txKind" class="input"><option value="expense">Expense</option><option value="income">Income</option></select></div>
+            <div class="grid grid-cols-2 gap-2"><input id="txAmount" class="input" type="number" step="0.01" min="0.01" placeholder="Amount" required><select id="txCurrency" class="input"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select></div>
+            <input id="txCategory" class="input" placeholder="Category" required>
+            <input id="txMerchant" class="input" placeholder="Merchant">
+            <input id="txTags" class="input" placeholder="Tags: home, fixed">
+            <textarea id="txNote" class="input" placeholder="Note"></textarea>
+            <div class="flex gap-2">
+              <button id="txSubmit" type="submit" class="btn bg-indigo-600 flex-1">Add transaction</button>
+              <button id="txCancel" type="button" class="btn bg-slate-700 hidden">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <div id="recurring" class="glass rounded-2xl p-5 scroll-mt-20">
+          <h2 class="font-semibold mb-4">Recurring transaction</h2>
+          <form id="recForm" class="space-y-3">
+            <input id="recName" class="input" placeholder="Name e.g. Rent" required>
+            <div class="grid grid-cols-2 gap-2"><input id="recAmount" class="input" type="number" step="0.01" min="0.01" placeholder="Amount" required><select id="recFrequency" class="input"><option>monthly</option><option>weekly</option><option>yearly</option></select></div>
+            <input id="recCategory" class="input" placeholder="Category" required>
+            <input id="recDue" class="input" type="date" required>
+            <button class="btn bg-slate-800 w-full">Schedule recurring</button>
+          </form>
+          <p id="recurringMessage" class="mt-3 text-sm" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="transaction-import" class="glass scroll-mt-20 rounded-2xl p-5">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 class="font-semibold text-lg">Import Transactions</h2>
+          <p class="text-sm text-slate-400">Preview and review rows before adding them to your ledger.</p>
+        </div>
+        <a href="/api/transactions/import/template" class="inline-flex items-center gap-2 text-sm font-medium text-indigo-300 hover:text-indigo-200">
+          <i data-lucide="download" class="h-4 w-4"></i>Download sample template
+        </a>
+      </div>
+
+      <div id="importDropZone" class="mt-5 rounded-xl border border-dashed border-slate-600 bg-slate-900/50 p-6 text-center transition hover:border-indigo-400 focus-within:border-indigo-400">
+        <i data-lucide="sheet" class="mx-auto h-8 w-8 text-indigo-300"></i>
+        <p class="mt-3 font-medium">Drop an Excel or CSV file here</p>
+        <p class="mt-1 text-sm text-slate-400">.xlsx or .csv, up to 5 MB and 2,000 data rows</p>
+        <label for="importFile" class="btn mt-4 inline-flex cursor-pointer items-center gap-2 bg-slate-800 hover:bg-slate-700">
+          <i data-lucide="folder-open" class="h-4 w-4"></i>Choose file
+        </label>
+        <input id="importFile" type="file" class="sr-only" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
+      </div>
+
+      <div id="importSelectedFile" class="mt-3 hidden items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+        <div class="flex min-w-0 items-center gap-3">
+          <i data-lucide="file-spreadsheet" class="h-5 w-5 shrink-0 text-indigo-300"></i>
+          <div class="min-w-0"><p id="importFileName" class="truncate text-sm font-medium"></p><p id="importFileSize" class="text-xs text-slate-500"></p></div>
+        </div>
+        <button id="removeImportFile" type="button" class="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white" title="Remove selected file" aria-label="Remove selected file"><i data-lucide="x" class="h-4 w-4"></i></button>
+      </div>
+
+      <div id="importMappingPanel" class="mt-4 hidden rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+        <h3 class="font-medium text-amber-200">Map the required columns</h3>
+        <p class="mt-1 text-sm text-slate-400">We could not identify every required column. Choose the matching file header, then preview again.</p>
+        <div id="importMappingFields" class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+        <button id="remapImport" type="button" class="btn mt-4 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25">Preview with these columns</button>
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        <button id="previewImport" type="button" class="btn inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500" disabled>
+          <i data-lucide="scan-search" class="h-4 w-4"></i>Preview transactions
+        </button>
+        <span id="importProgress" class="hidden items-center gap-2 text-sm text-slate-400" role="status"><span class="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-indigo-400"></span>Processing file...</span>
+        <p id="importMessage" class="text-sm" role="status" aria-live="polite"></p>
+      </div>
+
+      <div id="importPreview" class="mt-5 hidden space-y-4">
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div class="rounded-lg border border-slate-800 bg-slate-900/70 p-3"><p class="text-xs text-slate-500">Detected</p><p id="importTotalRows" class="mt-1 text-lg font-semibold">0</p></div>
+          <div class="rounded-lg border border-emerald-900/70 bg-emerald-950/30 p-3"><p class="text-xs text-slate-500">Valid</p><p id="importValidRows" class="mt-1 text-lg font-semibold text-emerald-300">0</p></div>
+          <div class="rounded-lg border border-rose-900/70 bg-rose-950/30 p-3"><p class="text-xs text-slate-500">Invalid</p><p id="importInvalidRows" class="mt-1 text-lg font-semibold text-rose-300">0</p></div>
+          <div class="rounded-lg border border-amber-900/70 bg-amber-950/30 p-3"><p class="text-xs text-slate-500">Possible duplicates</p><p id="importDuplicateRows" class="mt-1 text-lg font-semibold text-amber-300">0</p></div>
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full min-w-[900px] text-left text-sm">
+            <thead class="bg-slate-900 text-xs uppercase text-slate-500"><tr><th class="p-3">Row</th><th class="p-3">Date</th><th class="p-3">Type</th><th class="p-3">Amount</th><th class="p-3">Category</th><th class="p-3">Merchant</th><th class="p-3">Validation</th></tr></thead>
+            <tbody id="importPreviewRows" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+        <div class="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div class="space-y-2">
+            <label id="importValidOnlyWrap" class="hidden items-start gap-2 text-sm text-slate-300"><input id="importValidOnly" type="checkbox" class="mt-1 accent-indigo-500"><span>Import valid rows only; skip invalid rows and include them in the report.</span></label>
+            <label id="importDuplicateWrap" class="hidden items-start gap-2 text-sm text-slate-300"><input id="importIncludeDuplicates" type="checkbox" class="mt-1 accent-indigo-500"><span>Include possible duplicates anyway.</span></label>
+            <p id="importConfirmationSummary" class="text-sm text-slate-400"></p>
+          </div>
+          <div class="flex shrink-0 gap-2">
+            <button id="cancelImport" type="button" class="btn bg-slate-800">Cancel</button>
+            <button id="confirmImport" type="button" class="btn bg-indigo-600 hover:bg-indigo-500" disabled>Import transactions</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="importResult" class="mt-5 hidden rounded-xl border border-slate-800 bg-slate-900/60 p-4" role="status" aria-live="polite"></div>
+    </section>
+    </div>
+
+    <div id="page-ai-wealth-agent" class="wealth-page hidden space-y-6">
+    <section id="ai-wealth-agent" class="glass rounded-2xl p-5 scroll-mt-20">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <div>
+          <h2 class="font-semibold text-lg">AI Wealth Agent</h2>
+          <p class="text-sm text-slate-400">Ask about spending, income, budgets, saving goals, and financial trends using your actual account data.</p>
+        </div>
+        <span class="inline-flex items-center gap-2 rounded-full border border-indigo-500/40 bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-200">
+          <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+          Read-only
+        </span>
+      </div>
+
+      <div id="aiChat" class="space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+        <div class="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-3 text-sm text-slate-200">
+          <div class="mb-2 flex items-center gap-2 font-medium text-indigo-200">
+            <i data-lucide="sparkles" class="h-4 w-4"></i>
+            WealthFlow AI
+          </div>
+          <p>Ask me what changed this month, which category is growing, how close you are to your budget, or whether your goals are on track.</p>
+        </div>
+      </div>
+
+      <div id="aiSuggestions" class="mt-4 flex flex-wrap gap-2"></div>
+
+      <form id="aiChatForm" class="mt-4 flex flex-col gap-3 sm:flex-row">
+        <label class="sr-only" for="aiPrompt">Ask the AI agent a financial question</label>
+        <input id="aiPrompt" class="input flex-1" type="text" maxlength="500" placeholder="Ask about spending, income, budgets, and saving goals..." autocomplete="off">
+        <button id="aiSubmit" type="submit" class="btn bg-indigo-600 hover:bg-indigo-500 inline-flex items-center justify-center gap-2 min-w-[160px]">
+          <i data-lucide="send" class="h-4 w-4"></i>
+          <span>Ask AI</span>
+        </button>
+      </form>
+
+      <p id="aiStatus" class="mt-3 text-sm text-slate-400" role="status" aria-live="polite"></p>
+    </section>
+    </div>
+
+    <div id="page-budgets-savings" class="wealth-page hidden space-y-6">
+    <section id="saving-goals" class="glass rounded-2xl p-5 scroll-mt-20">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <div>
+          <h2 class="font-semibold text-lg">Saving Goals</h2>
+          <p class="text-sm text-slate-400">Track goal-specific savings without changing your transaction totals.</p>
+        </div>
+        <button id="createGoalButton" type="button" class="btn bg-indigo-600 hover:bg-indigo-500 inline-flex items-center justify-center gap-2">
+          <i data-lucide="plus" class="w-4"></i><span>Create Goal</span>
+        </button>
+      </div>
+      <p id="savingsGoalsMessage" class="text-sm mb-3" role="status" aria-live="polite"></p>
+      <div id="savingsGoalsList" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <p class="text-sm text-slate-400">Loading saving goals...</p>
+      </div>
+    </section>
+
+    <dialog id="goalDialog" class="m-auto w-[calc(100%-2rem)] max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-950 p-0 text-slate-100 backdrop:bg-black/70">
+      <div class="p-5 sm:p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <h2 id="goalDialogTitle" class="font-semibold text-lg">Create saving goal</h2>
+          <button id="goalDialogClose" type="button" class="btn bg-slate-800 p-2" aria-label="Close dialog" title="Close">
+            <i data-lucide="x" class="w-4"></i>
+          </button>
+        </div>
+        <p id="goalDialogMessage" class="text-sm mb-3" role="status" aria-live="polite"></p>
+        <form id="goalForm" class="space-y-3">
+          <label class="block text-sm text-slate-300">Goal name
+            <input id="goalName" class="input mt-1" maxlength="120" required>
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="block text-sm text-slate-300">Target amount
+              <input id="goalTargetAmount" class="input mt-1" type="number" min="0.01" step="0.01" required>
+            </label>
+            <label class="block text-sm text-slate-300">Currency
+              <select id="goalCurrency" class="input mt-1"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select>
+              <span id="goalCurrencyHelp" class="mt-1 hidden text-xs text-slate-500">Currency is locked after money has been saved.</span>
+            </label>
+          </div>
+          <label id="goalSavedWrap" class="block text-sm text-slate-300">Already saved
+            <input id="goalSavedAmount" class="input mt-1" type="number" min="0" step="0.01" value="0">
+          </label>
+          <label class="block text-sm text-slate-300">Target date <span class="text-slate-500">(optional)</span>
+            <input id="goalDeadline" class="input mt-1" type="date">
+          </label>
+          <label class="block text-sm text-slate-300">Description <span class="text-slate-500">(optional)</span>
+            <textarea id="goalDescription" class="input mt-1" maxlength="500" rows="3"></textarea>
+          </label>
+          <div class="flex justify-end gap-2 pt-2">
+            <button id="goalFormCancel" type="button" class="btn bg-slate-800">Cancel</button>
+            <button id="goalFormSubmit" type="submit" class="btn bg-indigo-600 hover:bg-indigo-500">Create goal</button>
+          </div>
+        </form>
+        <form id="goalMoneyForm" class="space-y-3 hidden">
+          <p id="goalMoneyDescription" class="text-sm text-slate-400"></p>
+          <label class="block text-sm text-slate-300">Amount
+            <input id="goalMoneyAmount" class="input mt-1" type="number" min="0.01" step="0.01" required>
+          </label>
+          <div class="flex justify-end gap-2 pt-2">
+            <button id="goalMoneyCancel" type="button" class="btn bg-slate-800">Cancel</button>
+            <button id="goalMoneySubmit" type="submit" class="btn bg-indigo-600 hover:bg-indigo-500">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+    
+<section id="budgets" class="glass rounded-2xl p-5 scroll-mt-20">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="font-semibold text-lg">Monthly Budgets</h2>
+      <p class="text-sm text-slate-400">Set spending limits by category.</p>
+    </div>
+  </div>
+
+  <form id="budgetForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+    <input id="budgetCategory" class="input" placeholder="Category (e.g. Food)" required maxlength="80">
+
+    <input id="budgetAmount" class="input" type="number" min="0.01" step="0.01" placeholder="Budget amount" required>
+
+    <select id="budgetMonth" class="input" required>
+      <option value="1">January</option>
+      <option value="2">February</option>
+      <option value="3">March</option>
+      <option value="4">April</option>
+      <option value="5">May</option>
+      <option value="6">June</option>
+      <option value="7">July</option>
+      <option value="8">August</option>
+      <option value="9">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
+    </select>
+
+    <input id="budgetYear" class="input" type="number" min="2000" max="2100" required>
+
+    <button type="submit" class="btn bg-indigo-600 hover:bg-indigo-500">
+      Save Budget
+    </button>
+  </form>
+
+  <p id="budgetMessage" class="text-sm mb-3" role="status"></p>
+  <div id="budgetAlerts" class="mb-4 space-y-2" aria-live="polite"></div>
+  <div id="budgetsList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+    <p class="text-sm text-slate-400">Your budgets will appear here.</p>
+  </div>
+</section>
+    </div>
+
+    <div id="page-analytics-reports" class="wealth-page hidden space-y-6">
+    <section id="analytics-reports" class="scroll-mt-20 space-y-5">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold">Analytics &amp; Reports</h2>
+          <p class="mt-1 text-sm text-slate-400">Explore category spending and recorded cashflow activity.</p>
+        </div>
+        <div id="export-reports" class="flex gap-2">
+          <a class="btn bg-slate-800" href="/api/export/csv">CSV</a>
+          <a class="btn bg-slate-800" href="/api/export/xlsx">Excel</a>
+        </div>
+      </div>
+      <section class="glass rounded-2xl p-5">
+        <h3 class="font-semibold">Cashflow trends</h3>
+        <p class="mt-1 text-xs text-slate-500">Recorded income and expenses over time.</p>
+        <div id="reportTrendChart" class="mt-3"></div>
+      </section>
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <section class="glass rounded-2xl p-5">
+          <h3 class="font-semibold">Current-month category breakdown</h3>
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="border-b border-slate-800 text-left text-slate-500"><tr><th class="p-3">Category</th><th class="p-3 text-right">Amount</th><th class="p-3 text-right">Share</th></tr></thead>
+              <tbody id="reportCategories"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="glass rounded-2xl p-5">
+          <h3 class="font-semibold">Recorded cashflow by date</h3>
+          <div class="mt-4 max-h-[420px] overflow-auto">
+            <table class="w-full text-sm">
+              <thead class="sticky top-0 border-b border-slate-800 bg-slate-900 text-left text-slate-500"><tr><th class="p-3">Date</th><th class="p-3 text-right">Income</th><th class="p-3 text-right">Expenses</th><th class="p-3 text-right">Net</th></tr></thead>
+              <tbody id="reportTimeline"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+    </div>
+
+    <div id="page-account-security" class="wealth-page hidden space-y-6">
+    <section id="account-information" class="glass scroll-mt-20 rounded-2xl p-5">
+      <div class="mb-4">
+        <h2 class="font-semibold text-lg">Account Information</h2>
+        <p class="text-sm text-slate-400">Profile details for the currently signed-in account.</p>
+      </div>
+      <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><dt class="text-xs uppercase tracking-wide text-slate-500">Name</dt><dd id="accountName" class="mt-2 break-words font-medium">—</dd></div>
+        <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><dt class="text-xs uppercase tracking-wide text-slate-500">Email</dt><dd id="accountEmail" class="mt-2 break-all font-medium">—</dd></div>
+        <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><dt class="text-xs uppercase tracking-wide text-slate-500">User ID</dt><dd id="accountId" class="mt-2 font-medium">—</dd></div>
+        <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><dt class="text-xs uppercase tracking-wide text-slate-500">Display currency</dt><dd id="accountCurrency" class="mt-2 font-medium">—</dd></div>
+      </dl>
+      <p class="mt-4 text-xs text-slate-500">Change your display name in Security &amp; Settings. Email remains read-only.</p>
+    </section>
+
+    <section id="settings" class="scroll-mt-20 space-y-5">
+      <div>
+        <h2 class="text-xl font-semibold">Security &amp; Settings</h2>
+        <p class="mt-1 text-sm text-slate-400">Manage your profile, display preferences, and sign-in security.</p>
+      </div>
+
+      <section class="glass rounded-2xl p-5" aria-labelledby="profileSettingsTitle">
+        <div class="mb-4"><h3 id="profileSettingsTitle" class="font-semibold">Profile</h3><p class="mt-1 text-sm text-slate-400">Your email address is read-only. Choose a display name up to 120 characters.</p></div>
+        <form id="profileSettingsForm" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <label class="text-sm text-slate-300">Display name<input id="profileDisplayName" class="input mt-1" maxlength="120" required autocomplete="name"></label>
+          <label class="text-sm text-slate-300">Email address<input id="profileEmail" class="input mt-1 opacity-70" type="email" readonly aria-readonly="true"></label>
+          <label class="text-sm text-slate-300">Member since<input id="profileCreatedAt" class="input mt-1 opacity-70" readonly aria-readonly="true"></label>
+          <div class="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-3"><button class="btn bg-indigo-600 hover:bg-indigo-500" type="submit">Save profile</button><p id="profileSettingsMessage" class="text-sm" role="status" aria-live="polite"></p></div>
+        </form>
+      </section>
+
+      <section class="glass rounded-2xl p-5" aria-labelledby="preferenceSettingsTitle">
+        <div class="mb-4"><h3 id="preferenceSettingsTitle" class="font-semibold">Preferences</h3><p class="mt-1 text-sm text-slate-400">Display currency changes reporting conversions only; saved transaction amounts are not changed.</p></div>
+        <form id="preferencesForm" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label class="text-sm text-slate-300">Theme<select id="settingsTheme" class="input mt-1"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label>
+          <label class="text-sm text-slate-300">Display currency<select id="settingsCurrency" class="input mt-1"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select></label>
+          <label class="text-sm text-slate-300">Date format<select id="settingsDateFormat" class="input mt-1"><option value="iso">YYYY-MM-DD</option><option value="us">MM/DD/YYYY</option><option value="eu">DD/MM/YYYY</option></select></label>
+          <div class="flex flex-wrap items-end gap-3"><button class="btn bg-indigo-600 hover:bg-indigo-500" type="submit">Save preferences</button></div>
+          <p id="preferencesMessage" class="text-sm sm:col-span-2 lg:col-span-4" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="glass rounded-2xl p-5" aria-labelledby="passwordSettingsTitle">
+        <div class="mb-4"><h3 id="passwordSettingsTitle" class="font-semibold">Change password</h3><p class="mt-1 text-sm text-slate-400">Use at least 12 characters. After changing it, you’ll need to sign in again on this device and all previously issued tokens will stop working.</p></div>
+        <form id="passwordSettingsForm" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <label class="text-sm text-slate-300">Current password<input id="currentPassword" class="input mt-1" type="password" minlength="1" maxlength="128" required autocomplete="current-password"></label>
+          <label class="text-sm text-slate-300">New password<input id="newPassword" class="input mt-1" type="password" minlength="12" maxlength="72" required autocomplete="new-password"></label>
+          <label class="text-sm text-slate-300">Confirm new password<input id="confirmNewPassword" class="input mt-1" type="password" minlength="12" maxlength="72" required autocomplete="new-password"></label>
+          <div class="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-3"><button class="btn bg-indigo-600 hover:bg-indigo-500" type="submit">Change password</button><p id="passwordSettingsMessage" class="text-sm" role="status" aria-live="polite"></p></div>
+        </form>
+      </section>
+
+      <section class="glass rounded-2xl p-5" aria-labelledby="sessionSettingsTitle">
+        <div class="mb-3"><h3 id="sessionSettingsTitle" class="font-semibold">Session management</h3><p class="mt-1 text-sm text-slate-400">WealthFlow does not track individual devices or show an active-session list. Logging out or changing your password revokes previously issued sign-in tokens.</p></div>
+        <button id="settingsLogout" type="button" class="btn bg-slate-800 hover:bg-slate-700">Log out of this account</button>
+      </section>
+
+      <section class="glass rounded-2xl p-5" aria-labelledby="privacySettingsTitle">
+        <div class="mb-4"><h3 id="privacySettingsTitle" class="font-semibold">Privacy &amp; account data</h3></div>
+        <p class="text-sm leading-6 text-slate-400">WealthFlow stores your email address, display name, password hash, preferences, transactions, budgets, recurring transactions, saving goals, asset and liability estimates, historical net-worth snapshots, and support requests you submit. Passwords are not stored as plain text. Your financial records are scoped to your account.</p>
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <a class="btn inline-flex items-center gap-2 bg-slate-800" href="/api/export/xlsx"><i data-lucide="download" class="h-4 w-4"></i>Download transaction data (Excel)</a>
+          <p class="text-xs text-slate-500">This downloads transactions only, not a complete account archive. Self-service account deletion is not available.</p>
+        </div>
+      </section>
+    </section>
+    </div>
+
+    <div id="page-help-support" class="wealth-page hidden space-y-6">
+    <section id="help-support" class="scroll-mt-20 space-y-5">
+      <div>
+        <h2 class="text-xl font-semibold">Help &amp; Support</h2>
+        <p class="mt-1 text-sm text-slate-400">Guidance for the features available in your WealthFlow account.</p>
+      </div>
+
+      <section class="glass rounded-2xl p-5" aria-labelledby="helpTopicsTitle">
+        <h3 id="helpTopicsTitle" class="mb-4 font-semibold">Help center</h3>
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <article class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><h4 class="font-medium">Getting started</h4><p class="mt-2 text-sm text-slate-400">Create an account or sign in, choose a display currency, then add your first transaction from the Transactions section.</p></article>
+          <article class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><h4 class="font-medium">Transactions</h4><p class="mt-2 text-sm text-slate-400">Add income or expenses, filter the ledger, use the pencil to edit, or the trash icon to delete a transaction.</p></article>
+          <article class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><h4 class="font-medium">Charts &amp; insights</h4><p class="mt-2 text-sm text-slate-400">The dashboard summarizes recorded income and expenses. Charts, projected spending, and insights update from your transactions.</p></article>
+          <article class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><h4 class="font-medium">Goals &amp; budgets</h4><p class="mt-2 text-sm text-slate-400">Saving goals track goal-specific savings separately from transactions. Budgets set category limits for a selected month and year.</p></article>
+          <article class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><h4 class="font-medium">Import &amp; export</h4><p class="mt-2 text-sm text-slate-400">Import .xlsx or UTF-8 .csv after reviewing the preview. CSV and Excel exports download your own transaction records.</p></article>
+          <article class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><h4 class="font-medium">Account &amp; security</h4><p class="mt-2 text-sm text-slate-400">Update your display name and preferences in Settings. Password changes require your current password and sign you out.</p></article>
+          <article class="rounded-xl border border-slate-700 bg-slate-900/60 p-4"><h4 class="font-medium">Recurring transactions</h4><p class="mt-2 text-sm text-slate-400">Schedule recurring rules with a due date and frequency. Removing a rule deactivates it and preserves transaction history.</p></article>
+        </div>
+      </section>
+
+      <section class="glass rounded-2xl p-5" aria-labelledby="faqTitle">
+        <h3 id="faqTitle" class="mb-3 font-semibold">Frequently asked questions</h3>
+        <div class="divide-y divide-slate-800">
+          <details class="py-3"><summary class="cursor-pointer font-medium">How do I add a transaction?</summary><p class="mt-2 text-sm text-slate-400">Use the Add transaction form next to the ledger. Enter date, type, amount, and category, then submit.</p></details>
+          <details class="py-3"><summary class="cursor-pointer font-medium">How do I correct an incorrect transaction?</summary><p class="mt-2 text-sm text-slate-400">Select the pencil icon on its ledger row, change the fields, and save. Deletion is available from the trash icon.</p></details>
+          <details class="py-3"><summary class="cursor-pointer font-medium">How do I import or export transactions?</summary><p class="mt-2 text-sm text-slate-400">Use Import Transactions to preview an .xlsx or .csv file before confirmation. Use the CSV or Excel actions in the ledger to export the signed-in user’s transactions.</p></details>
+          <details class="py-3"><summary class="cursor-pointer font-medium">How do I change my display currency?</summary><p class="mt-2 text-sm text-slate-400">Change Display currency in Settings or the dashboard header. Existing transaction amounts stay in their original currencies; dashboard values are converted for display.</p></details>
+          <details class="py-3"><summary class="cursor-pointer font-medium">How do I change my password?</summary><p class="mt-2 text-sm text-slate-400">In Settings, enter your current password and a matching new password of at least 12 characters. You’ll be signed out and must log in again.</p></details>
+          <details class="py-3"><summary class="cursor-pointer font-medium">What if I cannot log in?</summary><p class="mt-2 text-sm text-slate-400">Check that the email address is correct and try your password again. There is no password-reset email configured in this installation.</p></details>
+          <details class="py-3"><summary class="cursor-pointer font-medium">How can I protect my financial information?</summary><p class="mt-2 text-sm text-slate-400">Use a unique password, sign out on shared devices, and use HTTPS for remote deployments. Never share your password or downloaded financial reports.</p></details>
+          <details class="py-3"><summary class="cursor-pointer font-medium">Can I delete my account?</summary><p class="mt-2 text-sm text-slate-400">Self-service deletion is not available. Contact your application administrator; submitting the support form below only saves a local request and does not send an email.</p></details>
+        </div>
+      </section>
+
+      <section class="glass rounded-2xl p-5" aria-labelledby="troubleshootingTitle">
+        <h3 id="troubleshootingTitle" class="mb-3 font-semibold">Troubleshooting</h3>
+        <ul class="list-disc space-y-2 pl-5 text-sm text-slate-400">
+          <li>If a dashboard section appears blank, refresh the page and sign in again.</li>
+          <li>If an import is rejected, check the required columns, supported currencies, row errors, and file size limit.</li>
+          <li>If your password was changed elsewhere, sign in again; older sessions are revoked.</li>
+          <li>If charts do not load, check your connection to the chart library CDN and refresh the dashboard.</li>
+        </ul>
+      </section>
+
+      <section class="glass rounded-2xl p-5" aria-labelledby="contactSupportTitle">
+        <div class="mb-4"><h3 id="contactSupportTitle" class="font-semibold">Contact support</h3><p class="mt-1 text-sm text-amber-300">Requests are saved to your account in this application. No email service or support inbox is configured, so this form does not send email.</p></div>
+        <form id="supportForm" class="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <label class="text-sm text-slate-300">Subject<input id="supportSubject" class="input mt-1" minlength="3" maxlength="160" required></label>
+          <label class="text-sm text-slate-300">Category<select id="supportCategory" class="input mt-1"><option>General</option><option>Account</option><option>Transactions</option><option>Import/Export</option><option>Security</option></select></label>
+          <label class="text-sm text-slate-300 md:col-span-2">Message<textarea id="supportMessage" class="input mt-1" minlength="10" maxlength="5000" rows="5" required></textarea></label>
+          <label class="text-sm text-slate-300">Optional contact email<input id="supportContactEmail" class="input mt-1" type="email" maxlength="320"></label>
+          <div class="flex flex-wrap items-end gap-3"><button id="supportSubmit" class="btn bg-indigo-600 hover:bg-indigo-500" type="submit">Save support request</button><p id="supportMessageStatus" class="text-sm" role="status" aria-live="polite"></p></div>
+        </form>
+        <div class="mt-6"><h4 class="mb-2 text-sm font-semibold">Your saved requests</h4><div id="supportTicketList" class="space-y-2"><p class="text-sm text-slate-400">Your saved requests will appear here.</p></div></div>
+      </section>
+    </section>
+    </div>
+
+    <div id="page-family" class="wealth-page hidden space-y-6">
+      <section class="glass rounded-2xl p-5">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 class="text-xl font-semibold">Family finances</h2>
+            <p class="mt-1 text-sm text-slate-400">Plan shared household spending and goals. Your personal transactions stay private.</p>
+          </div>
+          <label class="text-sm text-slate-300">Family
+            <select id="familySelect" class="input mt-1 min-w-48" aria-label="Select family"></select>
+          </label>
+        </div>
+        <p id="familyStatus" class="mt-3 text-sm text-slate-400" role="status" aria-live="polite">Loading family finances…</p>
+      </section>
+
+      <section class="glass rounded-2xl p-5">
+        <div class="mb-3">
+          <h3 class="font-semibold">Invitations for you</h3>
+          <p class="mt-1 text-sm text-slate-400">Accepting an invitation does not share your existing financial records.</p>
+        </div>
+        <div id="familyInvitationList" class="space-y-2">
+          <p class="text-sm text-slate-400">Loading invitations…</p>
+        </div>
+      </section>
+
+      <section class="glass rounded-2xl p-5">
+        <h3 class="font-semibold">Create a family group</h3>
+        <form id="familyCreateForm" class="mt-3 flex flex-col gap-2 sm:flex-row">
+          <label class="sr-only" for="familyName">Family group name</label>
+          <input id="familyName" class="input flex-1" maxlength="120" placeholder="e.g. The Parker household" required>
+          <button id="familyCreateSubmit" type="submit" class="btn bg-indigo-600 hover:bg-indigo-500">Create group</button>
+        </form>
+      </section>
+
+      <div id="familyWorkspace" class="hidden space-y-6">
+        <section class="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Shared household summary">
+          <article class="glass rounded-2xl p-5"><p class="text-xs uppercase tracking-wider text-slate-500">Opted-in household income this month</p><p id="familyIncome" class="mt-2 text-2xl font-bold">—</p></article>
+          <article class="glass rounded-2xl p-5"><p class="text-xs uppercase tracking-wider text-slate-500">Opted-in household expenses this month</p><p id="familyExpenses" class="mt-2 text-2xl font-bold">—</p></article>
+          <article class="glass rounded-2xl p-5"><p class="text-xs uppercase tracking-wider text-slate-500">Shared-record net</p><p id="familyNet" class="mt-2 text-2xl font-bold">—</p></article>
+        </section>
+        <p id="familyPrivacyNote" class="text-xs text-slate-500">Household summaries only include members who explicitly turn on sharing. Personal transaction details are never shown.</p>
+
+        <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <article class="glass rounded-2xl p-5">
+            <h3 class="font-semibold">Shared household budgets</h3>
+            <p class="mt-1 text-sm text-slate-400">Add shared household expenses here; they are separate from your personal ledger.</p>
+            <form id="familyBudgetForm" class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <input id="familyBudgetCategory" class="input" maxlength="80" placeholder="Category" required>
+              <input id="familyBudgetAmount" class="input" type="number" min="0.01" step="0.01" placeholder="Budget amount" required>
+              <select id="familyBudgetCurrency" class="input"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select>
+              <div class="grid grid-cols-2 gap-2"><input id="familyBudgetMonth" class="input" type="number" min="1" max="12" aria-label="Budget month" required><input id="familyBudgetYear" class="input" type="number" min="2000" max="2100" aria-label="Budget year" required></div>
+              <button id="familyBudgetSubmit" type="submit" class="btn bg-indigo-600 hover:bg-indigo-500 sm:col-span-2">Create shared budget</button>
+            </form>
+            <div id="familyBudgets" class="mt-4 space-y-3"><p class="text-sm text-slate-400">Loading shared budgets…</p></div>
+          </article>
+          <article class="glass rounded-2xl p-5">
+            <h3 class="font-semibold">Shared savings goals</h3>
+            <p class="mt-1 text-sm text-slate-400">Contributions are voluntary and tracked separately from personal savings goals.</p>
+            <form id="familyGoalForm" class="mt-4 grid grid-cols-1 gap-2">
+              <input id="familyGoalName" class="input" maxlength="120" placeholder="Goal name" required>
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2"><input id="familyGoalTarget" class="input" type="number" min="0.01" step="0.01" placeholder="Target amount" required><select id="familyGoalCurrency" class="input"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select></div>
+              <input id="familyGoalDeadline" class="input" type="date" aria-label="Optional target date">
+              <input id="familyGoalDescription" class="input" maxlength="2000" placeholder="Description (optional)">
+              <button id="familyGoalSubmit" type="submit" class="btn bg-indigo-600 hover:bg-indigo-500">Create shared goal</button>
+            </form>
+            <div id="familyGoals" class="mt-4 space-y-3"><p class="text-sm text-slate-400">Loading shared goals…</p></div>
+          </article>
+        </section>
+
+        <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <article class="glass rounded-2xl p-5">
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <div><h3 class="font-semibold">Family members</h3><p class="mt-1 text-sm text-slate-400">Only the owner can invite or remove members.</p></div>
+            </div>
+            <form id="familyInviteForm" class="mb-4 hidden flex-col gap-2 sm:flex-row">
+              <label class="sr-only" for="familyInviteEmail">Invite by email address</label>
+              <input id="familyInviteEmail" class="input flex-1" type="email" maxlength="320" placeholder="Email address" required>
+              <button id="familyInviteSubmit" type="submit" class="btn bg-slate-800">Send invitation</button>
+            </form>
+            <div id="familyMembers" class="space-y-2"><p class="text-sm text-slate-400">Loading members…</p></div>
+            <div id="familyInvitations" class="mt-4 space-y-2"></div>
+          </article>
+          <article class="glass rounded-2xl p-5">
+            <h3 class="font-semibold">Privacy, permissions &amp; notifications</h3>
+            <p class="mt-1 text-sm text-slate-400">These controls affect family information only; turning sharing off never deletes personal records.</p>
+            <div class="mt-4 space-y-3">
+              <label class="flex items-start gap-3 text-sm">
+                <input id="familyShareSummary" class="mt-1 accent-indigo-500" type="checkbox">
+                <span><strong>Share household income and expense totals</strong><span class="mt-1 block text-slate-400">Off by default. Only monthly totals are shared; no personal transaction details are shown.</span></span>
+              </label>
+              <label class="flex items-start gap-3 text-sm">
+                <input id="familyNotifications" class="mt-1 accent-indigo-500" type="checkbox">
+                <span><strong>Family activity notifications</strong><span class="mt-1 block text-slate-400">Receive in-app updates when others add shared expenses or goals.</span></span>
+              </label>
+              <label id="familyManagePermissionWrap" class="hidden items-start gap-3 text-sm">
+                <input id="familyManagePermission" class="mt-1 accent-indigo-500" type="checkbox">
+                <span><strong>Allow members to create shared budgets and goals</strong><span class="mt-1 block text-slate-400">Members can always contribute; only the owner can change this permission.</span></span>
+              </label>
+            </div>
+            <p id="familySettingsStatus" class="mt-3 text-sm" role="status" aria-live="polite"></p>
+            <div class="mt-5 border-t border-slate-800 pt-4">
+              <h4 class="font-medium">Recent family activity</h4>
+              <div id="familyNotificationsList" class="mt-2 space-y-2"><p class="text-sm text-slate-400">No activity to show.</p></div>
+            </div>
+            <div class="mt-5 border-t border-slate-800 pt-4">
+              <label id="familyLeaveWrap" class="hidden text-sm text-slate-300">Transfer ownership to
+                <select id="familySuccessor" class="input mt-1"><option value="">Choose a member (required for an owner)</option></select>
+              </label>
+              <button id="familyLeaveButton" type="button" class="btn mt-3 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25">Leave family</button>
+            </div>
+          </article>
+        </section>
+      </div>
+    </div>
+  </main>
+  </div>
+</div>
+<script src="/static/js/app.js"></script>
+<script type="module" src="/static/js/ai-agent.js"></script>
+</body>
+</html>

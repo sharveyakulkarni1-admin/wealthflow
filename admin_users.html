@@ -1,0 +1,103 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WealthFlow - Registered Users</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 p-6 text-slate-100">
+    <main class="mx-auto max-w-5xl">
+        <a href="/admin/dashboard"
+           class="text-indigo-400 hover:text-indigo-300">
+            &larr; Back to Admin Dashboard
+        </a>
+
+        <h1 class="mt-6 text-3xl font-bold">Registered Users</h1>
+        <p class="mt-2 text-slate-400">
+            Total registered users: {{ users | length }}
+        </p>
+        
+<div class="mt-6">
+    <label for="userSearch" class="mb-2 block text-sm font-medium text-slate-300">
+        Search users
+    </label>
+    <input
+        id="userSearch"
+        type="search"
+        placeholder="Search by name or email..."
+        class="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-indigo-500"
+    >
+    <p id="searchResult" class="mt-2 text-sm text-slate-400"></p>
+</div>
+
+
+        <div class="mt-6 overflow-x-auto rounded-xl border border-slate-800">
+            <table class="w-full text-left">
+                <thead class="bg-slate-900 text-slate-300">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Full Name</th>
+                        <th class="p-4">Email</th>
+                        <th class="p-4">Currency</th>
+                        <th class="p-4">Registered</th>
+                        <th class="p-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTable">
+                    {% for user in users %}
+                    <tr class="user-row border-t border-slate-800">
+                        <td class="p-4">{{ user.id }}</td>
+                        <td class="p-4">{{ user.full_name }}</td>
+                        <td class="p-4">{{ user.email }}</td>
+                        <td class="p-4">{{ user.base_currency }}</td>
+                        <td class="p-4">{{ user.created_at }}</td>
+                        <td class="p-4">
+    <a href="/admin/users/{{ user.id }}"
+       class="text-indigo-400 hover:text-indigo-300">
+        View Details
+    </a>
+</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="p-6 text-center text-slate-400">
+                            No registered users yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+
+<script>
+    const searchInput = document.getElementById("userSearch");
+    const userRows = document.querySelectorAll("#usersTable tr.user-row");
+    const searchResult = document.getElementById("searchResult");
+
+    searchInput.addEventListener("input", function () {
+        const query = this.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        userRows.forEach(function (row) {
+            const name = row.cells[1].textContent.toLowerCase();
+            const email = row.cells[2].textContent.toLowerCase();
+            const matches = name.includes(query) || email.includes(query);
+
+            row.style.display = matches ? "" : "none";
+
+            if (matches) {
+                visibleCount++;
+            }
+        });
+
+        searchResult.textContent = query
+            ? `${visibleCount} matching user(s)`
+            : "";
+    });
+</script>
+</body>
+</html>
